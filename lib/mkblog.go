@@ -2,12 +2,14 @@ package mkblog
 
 import (
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/gomarkdown/markdown"
+	"github.com/gomarkdown/markdown/ast"
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
 )
@@ -16,11 +18,12 @@ func mdToHTML(md []byte) []byte {
 	// create markdown parser with extensions
 	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
 	p := parser.NewWithExtensions(extensions)
-	doc := p.Parse(md)
+	normalizedMd := parser.NormalizeNewlines(md)
+	doc := p.Parse(normalizedMd)
 
 	// create HTML renderer with extensions
 	htmlFlags := html.CommonFlags | html.HrefTargetBlank
-	opts := html.RendererOptions{Flags: htmlFlags}
+	opts := html.RendererOptions{Flags: htmlFlags, RenderNodeHook: htmlRenderNodeHook}
 	renderer := html.NewRenderer(opts)
 
 	return markdown.Render(doc, renderer)
@@ -88,4 +91,17 @@ func relPathFromCwd(path string) (string, error) {
 
 func getCwd() (string, error) {
 	return os.Getwd()
+}
+
+func htmlRenderNodeHook(w io.Writer, node ast.Node, entering bool) (ast.WalkStatus, bool) {
+	switch n := node.(type) {
+	case *ast.Link:
+		if entering {
+			dest := string(n.Destination)
+			if strings.HasSuffix(dest, ".md") {
+				n.Destination = []byte(strings.TrimSuffix(dest, ".md"))
+			}
+		}
+	}
+	return ast.GoToNext, false
 }

@@ -9,5 +9,3 @@ playground-build: playground-clean
 
 playground-serve:
 	http-server dist
-
-playground-rebuild: playground-clean playground-build

@@ -87,10 +87,5 @@ func relPathFromCwd(path string) (string, error) {
 }
 
 func getCwd() (string, error) {
-	ex, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-	exPath := filepath.Dir(ex)
-	return exPath, nil
+	return os.Getwd()
 }

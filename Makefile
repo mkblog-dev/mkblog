@@ -1,3 +1,4 @@
 teste2e:
-	go build
-	./mkblog.dev -d ./playground -o ./test/build
+	go build -o ./bin/mkblog ./cli
+	./bin/mkblog -d ./playground -o ./test/build
+

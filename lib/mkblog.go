@@ -1,11 +1,8 @@
-package mkblog 
+package mkblog
 
 import (
-	"context"
 	"fmt"
 	"io/fs"
-	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,7 +10,6 @@ import (
 	"github.com/gomarkdown/markdown"
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
-	"github.com/urfave/cli/v3"
 )
 
 func mdToHTML(md []byte) []byte {
@@ -32,7 +28,7 @@ func mdToHTML(md []byte) []byte {
 
 func Build(inputDir string, outputDir string) error {
 	// we always work with paths relative to CWD
-	pathToBlog, err := RelPathFromCwd(inputDir)
+	pathToBlog, err := relPathFromCwd(inputDir)
 	if err != nil {
 		return err
 	}
@@ -76,60 +72,8 @@ func Build(inputDir string, outputDir string) error {
 	return nil
 }
 
-func main() {
-	cmd := &cli.Command{
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     "d",
-				Usage:    "Input directory",
-				Required: true,
-			},
-			&cli.StringFlag{
-				Name:     "o",
-				Usage:    "Output directory",
-				Required: true,
-			},
-		},
-		Action: func(ctx context.Context, cmd *cli.Command) error {
-			inputDir := cmd.String("d")
-			outputDir := cmd.String("o")
-
-			if inputDir == "" || outputDir == "" {
-				log.Println("Both -d (input) and -o (output) must be specified.")
-				os.Exit(1)
-			}
-
-			err := Build(inputDir, outputDir)
-			if err != nil {
-				log.Fatalf("build failed: %v", err)
-			}
-
-			log.Println("done")
-			return nil
-		},
-	}
-
-	if err := cmd.Run(context.Background(), os.Args); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func HandleGet(w http.ResponseWriter, r *http.Request) {
-	// md := []byte(mds)
-	md, err := os.ReadFile("test.md")
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
-		return
-	}
-	html := mdToHTML(md)
-
-	// fmt.Printf("--- Markdown:\n%s\n\n--- HTML:\n%s\n", md, htmli
-	w.Write([]byte(fmt.Sprintf(`<head><link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css"></head><body>%s</body>`, html)))
-}
-
-func RelPathFromCwd(path string) (string, error) {
-	cwd, err := GetCwd()
+func relPathFromCwd(path string) (string, error) {
+	cwd, err := getCwd()
 	if err != nil {
 		return "", err
 	}
@@ -142,7 +86,7 @@ func RelPathFromCwd(path string) (string, error) {
 	return filepath.Rel(cwd, abs)
 }
 
-func GetCwd() (string, error) {
+func getCwd() (string, error) {
 	ex, err := os.Executable()
 	if err != nil {
 		return "", err

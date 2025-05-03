@@ -1,3 +1,3 @@
-module github.com/mkblog/mkblog
+module github.com/mkblog-dev/mkblog
 
 go 1.24.1

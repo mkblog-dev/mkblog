@@ -1,4 +1,13 @@
-teste2e:
+build-cli:
 	go build -o ./bin/mkblog ./cli
-	./bin/mkblog -d ./playground -o ./dist
 
+playground-clean:
+	rm -rf dist
+
+playground-build: playground-clean
+	./bin/mkblog -d playground -o dist
+
+playground-serve:
+	http-server dist
+
+playground-rebuild: playground-clean playground-build

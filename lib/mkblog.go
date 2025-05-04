@@ -1,7 +1,9 @@
 package mkblog
 
 import (
+	"embed"
 	"fmt"
+	"html/template"
 	"io"
 	"io/fs"
 	"os"
@@ -13,6 +15,9 @@ import (
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
 )
+
+//go:embed templates
+var templates embed.FS
 
 func mdToHTML(md []byte) []byte {
 	// create markdown parser with extensions
@@ -30,6 +35,11 @@ func mdToHTML(md []byte) []byte {
 }
 
 func Build(inputDir string, outputDir string) error {
+	layoutTmpl, err := template.New("layout").ParseFS(templates, "templates/layout.tmpl")
+
+	if err != nil {
+		return err
+	}
 	// we always work with paths relative to CWD
 	pathToBlog, err := relPathFromCwd(inputDir)
 	if err != nil {
@@ -58,10 +68,15 @@ func Build(inputDir string, outputDir string) error {
 			if err != nil {
 				return err
 			}
-			err = os.WriteFile(filepath.Join(outputDir, strings.Replace(pathInsideBlog, ".md", ".html", 1)), html, 0644)
+
+			var f *os.File
+			f, err = os.Create(filepath.Join(outputDir, strings.Replace(pathInsideBlog, ".md", ".html", 1)))
 			if err != nil {
 				return err
 			}
+			defer f.Close()
+
+			RenderPage("Test", html, f, layoutTmpl)
 		}
 
 		return nil
@@ -104,4 +119,18 @@ func htmlRenderNodeHook(w io.Writer, node ast.Node, entering bool) (ast.WalkStat
 		}
 	}
 	return ast.GoToNext, false
+}
+
+type PageData struct {
+	Title   string
+	Content template.HTML
+}
+
+func RenderPage(title string, content []byte, output io.Writer, tmpl *template.Template) error {
+	data := PageData{
+		Title:   title,
+		Content: template.HTML(content), // mark as safe HTML
+	}
+
+	return tmpl.Execute(output, data)
 }

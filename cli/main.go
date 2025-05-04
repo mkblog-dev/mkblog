@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	mkblog "github.com/mkblog-dev/mkblog/lib"
+	mkblog "github.com/mkblog-dev/mkblog"
 	"github.com/urfave/cli/v3"
 )
 

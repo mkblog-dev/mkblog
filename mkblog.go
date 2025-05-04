@@ -51,6 +51,7 @@ func Build(inputDir string, outputDir string) error {
 			}
 
 			// TODO: we will have more default frontmatter than title, should consider json schema for validation
+			// TODO: should use first header on the page and then "Title"
 			var pageTitle string = "Title"
 			if fm, ok := frontmatter.(map[interface{}]interface{}); ok {
 				if rawTitle, exists := fm["title"]; exists {

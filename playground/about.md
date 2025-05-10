@@ -1,7 +1,10 @@
 ---
-title: Know me? 
+title: "Know me?"
 date: 2025-05-04
-tags: [go, markdown, parser]
+tags: 
+ - go
+ - markdown
+ - parser
 ---
 # About Me
 

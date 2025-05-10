@@ -37,6 +37,10 @@ func Build(inputDir string, outputDir string) error {
 			return err
 		}
 
+		if info.IsDir() {
+			return nil
+		}
+
 		pathInsideBlog := path[pathToBlogLen:]
 		ext := filepath.Ext(pathInsideBlog)
 		switch ext {
@@ -45,20 +49,9 @@ func Build(inputDir string, outputDir string) error {
 			if err != nil {
 				return err
 			}
-			frontmatter, mdAst, err := parser.ParseDocument(buffer)
+			mdAst, mdFrontmatter, err := parser.ParseDocument(buffer)
 			if err != nil {
 				return err
-			}
-
-			// TODO: we will have more default frontmatter than title, should consider json schema for validation
-			// TODO: should use first header on the page and then "Title"
-			var pageTitle string = "Title"
-			if fm, ok := frontmatter.(map[interface{}]interface{}); ok {
-				if rawTitle, exists := fm["title"]; exists {
-					if title, ok := rawTitle.(string); ok && strings.TrimSpace(title) != "" {
-						pageTitle = title
-					}
-				}
 			}
 
 			err = os.MkdirAll(filepath.Join(outputDir, filepath.Dir(pathInsideBlog)), 0755)
@@ -73,7 +66,14 @@ func Build(inputDir string, outputDir string) error {
 			}
 			defer f.Close()
 
-			render.RenderHtmlPage(pageTitle, mdAst, f, layoutTmpl)
+			// TODO: should be the first header in the document if empty
+			title := mdFrontmatter.Title
+			if title == "" {
+				title = "Title"
+			}
+			render.RenderHtmlPage(title, mdAst, buffer, f, layoutTmpl)
+		default:
+			utils.CopyFile(path, filepath.Join(outputDir, pathInsideBlog))
 		}
 
 		return nil

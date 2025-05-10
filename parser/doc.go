@@ -4,43 +4,48 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/gomarkdown/markdown/ast"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/text"
+	"go.abhg.dev/goldmark/frontmatter"
 )
 
-var (
-	frontmatterDelim = []byte("---")
-)
+type MdFrontmatter struct {
+	Title string   `yaml:"title"`
+	Tags  []string `yaml:"tags"`
+	Desc  string   `yaml:"description"`
+}
 
 // TODO: doc should be a structure with metadata. We need to report for the user which file and which line caused an error.
-func ParseDocument(doc []byte) (frontmatter any, markdown ast.Node, err error) {
+func ParseDocument(doc []byte) (mdAst ast.Node, mdFrontmatter MdFrontmatter, err error) {
+	var parsedFrontmatter MdFrontmatter
 	doc = bytes.TrimSpace(doc)
 	if len(doc) == 0 {
-		return nil, nil, errors.New("document is empty")
+		return nil, parsedFrontmatter, errors.New("document is empty")
 	}
 
-	if !bytes.HasPrefix(doc, frontmatterDelim) {
-		return nil, ParseMarkdown(doc), nil
+	md := goldmark.New(
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+		),
+		goldmark.WithExtensions(
+			&frontmatter.Extender{},
+		),
+	)
+
+	ctx := parser.NewContext()
+	reader := text.NewReader(doc)
+	parsedMd := md.Parser().Parse(reader, parser.WithContext(ctx))
+
+	d := frontmatter.Get(ctx)
+	if d == nil {
+		return parsedMd, parsedFrontmatter, nil
 	}
 
-	delimLen := len(frontmatterDelim)
-
-	// Find frontmatter start and end
-	frontmatterStart := delimLen
-	remaining := doc[frontmatterStart:]
-	remaining = bytes.TrimLeft(remaining, "\r\n\t ")
-
-	frontmatterEnd := bytes.Index(remaining, frontmatterDelim)
-	if frontmatterEnd == -1 {
-		return nil, nil, errors.New("closing frontmatter delimiter not found")
+	if err := d.Decode(&parsedFrontmatter); err != nil {
+		return parsedMd, parsedFrontmatter, err
 	}
 
-	// Calculate actual byte positions
-	rawFrontmatter := bytes.TrimSpace(remaining[:frontmatterEnd])
-	markdownStart := frontmatterStart + frontmatterEnd + delimLen + 1
-	rawMarkdown := bytes.TrimLeft(doc[markdownStart:], "\r\n\t ")
-
-	parsedMd := ParseMarkdown(rawMarkdown)
-	parsedFrontmatter, err := ParseFrontmatter(rawFrontmatter)
-
-	return parsedFrontmatter, parsedMd, err
+	return parsedMd, parsedFrontmatter, err
 }

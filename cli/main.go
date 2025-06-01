@@ -6,6 +6,7 @@ import (
 	"os"
 
 	mkblog "github.com/mkblog-dev/mkblog"
+	parser "github.com/mkblog-dev/mkblog/parser"
 	"github.com/urfave/cli/v3"
 )
 
@@ -32,7 +33,12 @@ func main() {
 				os.Exit(1)
 			}
 
-			err := mkblog.Build(inputDir, outputDir)
+			cfg, err := parser.LoadConfig(inputDir)
+			if err != nil && err.Error() != "no mkblog.yaml or mkblog.yml file found" {
+				log.Fatalf("invalid config: %v", err)
+			}
+
+			err = mkblog.Build(inputDir, outputDir, cfg)
 			if err != nil {
 				log.Fatalf("build failed: %v", err)
 			}

@@ -17,14 +17,13 @@ import (
 //go:embed templates
 var templates embed.FS
 
-func Build(inputDir string, outputDir string) error {
+func Build(inputDir string, outputDir string, cfg *parser.Config) error {
 	layoutTmpl, err := template.New("layout.tmpl").ParseFS(templates, "templates/*.tmpl")
 
 	if err != nil {
 		return err
 	}
 
-	// we always work with paths relative to CWD
 	pathToBlog, err := utils.RelPathFromCwd(inputDir)
 	if err != nil {
 		return err
@@ -71,8 +70,26 @@ func Build(inputDir string, outputDir string) error {
 			if title == "" {
 				title = "Title"
 			}
-			render.RenderHtmlPage(title, mdAst, buffer, f, layoutTmpl)
+
+			nav := []*parser.NavItem{}
+			if cfg != nil {
+				for _, item := range cfg.Nav {
+					normalized := *item // shallow copy
+					normalized.Href = strings.TrimSuffix(normalized.Href, ".md")
+					nav = append(nav, &normalized)
+				}
+			}
+
+			pageData := render.PageData{
+				Title: title,
+				Ast:   mdAst,
+				Doc:   buffer,
+				Nav:   nav,
+			}
+			render.RenderHtmlPage(&pageData, f, layoutTmpl)
 		default:
+			// TODO: not to copy dot folders and files.
+			// It can be a toggle feature, whether should files to be copied or not by default.
 			utils.CopyFile(path, filepath.Join(outputDir, pathInsideBlog))
 		}
 

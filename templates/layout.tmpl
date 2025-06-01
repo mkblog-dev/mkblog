@@ -8,17 +8,17 @@
     <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
 </head>
 <body>
-    <!-- Navbar -->
+  {{ if .Nav }}
     <header>
-        <nav>
-            <ul>
-                <li><a href="#">Home</a></li>
-                <li><a href="#">About</a></li>
-                <li><a href="#">Services</a></li>
-                <li><a href="#">Contact</a></li>
-            </ul>
-        </nav>
+      <nav>
+        <ul>
+          {{ range .Nav }}
+            <li><a href="{{ .Href }}">{{ .Title }}</a></li>
+          {{ end }}
+        </ul>
+      </nav>
     </header>
+  {{ end }}
     <main id="content">
         <article>
         {{ .Content }}

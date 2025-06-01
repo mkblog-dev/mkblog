@@ -6,23 +6,34 @@ import (
 	"io"
 	"strings"
 
+	mkParser "github.com/mkblog-dev/mkblog/parser"
+
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
 )
 
-type PageData struct {
+type templateData struct {
 	Title   string
 	Content template.HTML
+	Nav     []*mkParser.NavItem
 }
 
-func RenderHtmlPage(title string, mdAst ast.Node, doc []byte, output io.Writer, tmpl *template.Template) error {
-	stripMdExtensionsFromLinks(mdAst)
-	html := renderHtml(mdAst, doc)
-	data := PageData{
-		Title:   title,
+type PageData struct {
+	Title string
+	Ast   ast.Node
+	Doc   []byte
+	Nav   []*mkParser.NavItem
+}
+
+func RenderHtmlPage(pageData *PageData, output io.Writer, tmpl *template.Template) error {
+	stripMdExtensionsFromLinks(pageData.Ast)
+	html := renderHtml(pageData.Ast, pageData.Doc)
+	data := templateData{
+		Title:   pageData.Title,
 		Content: template.HTML(html),
+		Nav:     pageData.Nav,
 	}
 
 	return tmpl.Execute(output, data)
